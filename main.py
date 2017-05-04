@@ -14,14 +14,20 @@ class BlogHandler(webapp2.RequestHandler):
         query = Post.all().order('-created')
         return query.fetch(limit=limit, offset=offset)
 
-    def get_posts_by_user(self, user, limit, offset):
+    def get_posts_by_user(self, user, limit, offset=0):
         """
             Get all posts by a specific user, ordered by creation date (descending).
             The user parameter will be a User object.
         """
+        #
+        # query = "SELECT * FROM User WHERE author = {0} LIMIT {1}".format(,str(5+offset))
+        # print query
+        query = db.GqlQuery("SELECT * FROM Post WHERE author = :1",user)
 
-        # TODO - filter the query so that only posts by the given user
-        return None
+        return query.fetch(limit=limit, offset=offset)
+
+
+        return query.fetch(limit=limit,offset=offset)
 
     def get_user_by_name(self, username):
         """ Get a user object from the db, based on their username """
@@ -155,7 +161,7 @@ class ViewPostHandler(BlogHandler):
         post = Post.get_by_id(int(id))
         if post:
             t = jinja_env.get_template("post.html")
-            response = t.render(post=post)
+            response = t.render(post=post,author=post.author.username)
         else:
             error = "there is no post with id %s" % id
             t = jinja_env.get_template("404.html")
@@ -257,8 +263,6 @@ class SignupHandler(BlogHandler):
             self.redirect('/blog/newpost')
 
 class LoginHandler(BlogHandler):
-
-    # TODO - The login code here is mostly set up for you, but there isn't a template to log in
 
     def render_login_form(self, error=""):
         """ Render the login form with or without an error, based on parameters """
